@@ -1,0 +1,33 @@
+.trending{
+
+    background:#101010;
+
+    padding:60px 0;
+
+}
+
+.trending h2{
+
+    color:white;
+
+    text-align:center;
+
+    margin-bottom:40px;
+
+    font-size:38px;
+
+}
+
+.movie-container{
+
+    display:flex;
+
+    justify-content:center;
+
+    flex-wrap:wrap;
+
+    gap:35px;
+
+    padding:40px;
+
+}

@@ -1,0 +1,221 @@
+.movie-wrapper {
+  width: 100%;
+  min-width: 0;
+}
+
+.movie-card {
+  width: 100%;
+  background: rgba(20, 20, 25, 0.98);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+  transition: 0.3s ease;
+}
+
+.movie-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+}
+
+
+/* POSTER */
+
+.movie-poster {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  overflow: hidden;
+  background: #111;
+}
+
+.movie-poster img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+
+/* RATING */
+
+.movie-rating {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  background: #ff5722;
+  color: white;
+
+  padding: 9px 14px;
+  border-radius: 25px;
+
+  font-size: 15px;
+  font-weight: 700;
+}
+
+
+/* INFO */
+
+.movie-info {
+  padding: 22px;
+}
+
+.movie-info h2 {
+  margin: 0 0 18px;
+
+  color: white;
+
+  font-size: 24px;
+  line-height: 1.2;
+
+  min-height: 58px;
+}
+
+
+/* TAGS */
+
+.movie-tags {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.movie-tags span {
+  background: #333;
+  color: white;
+
+  padding: 8px 14px;
+
+  border-radius: 20px;
+
+  font-size: 13px;
+}
+
+
+/* ACTIONS */
+
+.movie-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+}
+
+
+/* DETAILS */
+
+.details-btn {
+  border: none;
+
+  background: #ff5722;
+  color: white;
+
+  padding: 13px 22px;
+
+  border-radius: 30px;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.details-btn:hover {
+  background: #ff7043;
+}
+
+
+/* HEART */
+
+.heart-btn {
+  width: 50px;
+  height: 50px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: #333;
+  color: #ff315b;
+
+  font-size: 20px;
+
+  cursor: pointer;
+}
+
+.heart-btn:hover {
+  background: #ff315b;
+  color: white;
+}
+
+
+/* FAVORITE + WATCHLIST */
+
+.extra-actions {
+  display: flex;
+
+  gap: 10px;
+
+  margin-top: 18px;
+
+  width: 100%;
+}
+
+.favorite-btn,
+.watchlist-btn {
+  flex: 1;
+
+  border: none;
+
+  padding: 11px 10px;
+
+  border-radius: 25px;
+
+  color: white;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.3s;
+}
+
+.favorite-btn {
+  background: #ff315b;
+}
+
+.favorite-btn:hover {
+  background: #ff1744;
+}
+
+.watchlist-btn {
+  background: #343434;
+}
+
+.watchlist-btn:hover {
+  background: #555;
+}
+
+
+/* MOBILE */
+
+@media (max-width: 650px) {
+
+  .movie-poster {
+    height: 420px;
+  }
+
+  .extra-actions {
+    flex-direction: column;
+  }
+
+  .favorite-btn,
+  .watchlist-btn {
+    width: 100%;
+  }
+}

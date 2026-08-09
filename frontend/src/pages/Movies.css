@@ -1,0 +1,198 @@
+/* =========================
+   MOVIES PAGE
+========================= */
+
+.movies-page {
+  min-height: 100vh;
+  padding: 110px 6% 80px;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      rgba(5, 8, 20, 0.72),
+      rgba(5, 8, 20, 0.92)
+    ),
+    url("https://wallpaperaccess.com/full/4839516.jpg");
+
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
+
+  position: relative;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.movies-header {
+  text-align: center;
+  margin-bottom: 45px;
+}
+
+.movies-header h1 {
+  font-size: 44px;
+  margin: 0 0 12px;
+
+  color: #ffffff;
+
+  font-weight: 800;
+}
+
+.movies-header p {
+  margin: 0;
+
+  font-size: 18px;
+
+  color: #d0d0d0;
+}
+
+
+/* =========================
+   SEARCH
+========================= */
+
+.movie-search {
+  max-width: 900px;
+
+  margin: 0 auto 65px;
+
+  display: flex;
+
+  gap: 15px;
+}
+
+.movie-search input {
+  flex: 1;
+
+  padding: 18px 25px;
+
+  border-radius: 35px;
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  background: rgba(20, 20, 25, 0.9);
+
+  color: white;
+
+  font-size: 18px;
+
+  outline: none;
+
+  backdrop-filter: blur(10px);
+}
+
+.movie-search input::placeholder {
+  color: #aaa;
+}
+
+.movie-search input:focus {
+  border-color: #ff5722;
+
+  box-shadow: 0 0 15px rgba(255, 87, 34, 0.25);
+}
+
+.movie-search button {
+  padding: 0 32px;
+
+  border: none;
+
+  border-radius: 35px;
+
+  background: #ff5722;
+
+  color: white;
+
+  font-size: 17px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.3s;
+}
+
+.movie-search button:hover {
+  background: #ff7043;
+
+  transform: translateY(-2px);
+}
+
+
+/* =========================
+   MOVIE GRID
+========================= */
+
+.movie-container {
+  width: 100%;
+
+  max-width: 1250px;
+
+  margin: 0 auto;
+
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: 42px;
+}
+
+
+/* =========================
+   LOADING
+========================= */
+
+.loading,
+.no-results {
+  text-align: center;
+
+  padding: 80px 20px;
+}
+
+.loading h2,
+.no-results h2 {
+  color: white;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1000px) {
+
+  .movie-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: 650px) {
+
+  .movies-page {
+    padding: 90px 20px 50px;
+  }
+
+  .movies-header h1 {
+    font-size: 32px;
+  }
+
+  .movies-header p {
+    font-size: 16px;
+  }
+
+  .movie-search {
+    flex-direction: column;
+  }
+
+  .movie-search button {
+    padding: 16px;
+  }
+
+  .movie-container {
+    grid-template-columns: 1fr;
+  }
+
+}
