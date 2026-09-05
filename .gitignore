@@ -1,62 +1,28 @@
-<<<<<<< HEAD
-# Environment variables
+# Environment
 .env
-backend/.env
-frontend/.env
+*.env
 
 # Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-
-# Virtual environments
-venv/
-.venv/
 
 # Node
 node_modules/
-
-# Build
-dist/
-build/
-
-# IDE
-.vscode/
 
 # Database
 *.db
 *.sqlite
 *.sqlite3
 
-# OS
-.DS_Store
-Thumbs.db
-=======
-# Environment variables
-.env
+# Large datasets
+backend/data/
+backend/ml/*.csv
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+# ML models
+backend/ml/*.pkl
 
-# Virtual environment
-venv/
-.venv/
+# CE1 generated files
+backend/ce1_output/
 
-# Node
-node_modules/
-
-# Build
-dist/
-build/
-
-# IDE
-.vscode/
-
-# OS
-.DS_Store
-Thumbs.db
->>>>>>> 61b4dca6a19c772b791dd4da17326b21fed955d2
+# Large videos
+frontend/public/videos/*.mp455d2
