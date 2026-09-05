@@ -1,0 +1,216 @@
+/* =========================================
+   MOVIE GRID
+========================================= */
+
+.movie-grid {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(6, minmax(0, 1fr));
+
+  gap: 20px;
+}
+
+
+/* =========================================
+   MOVIE CARD
+========================================= */
+
+.movie-card {
+  position: relative;
+
+  min-width: 0;
+
+  overflow: hidden;
+
+  border-radius: 13px;
+
+  background:
+    rgba(18, 18, 25, 0.9);
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.08);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.movie-card:hover {
+  transform:
+    translateY(-7px)
+    scale(1.015);
+
+  border-color:
+    rgba(172, 105, 255, 0.48);
+
+  box-shadow:
+    0 18px 40px
+    rgba(0, 0, 0, 0.55);
+}
+
+
+/* =========================================
+   POSTER
+========================================= */
+
+.movie-poster {
+  display: block;
+
+  width: 100%;
+
+  aspect-ratio: 2 / 3;
+
+  object-fit: cover;
+
+  background: #15151c;
+
+  transition:
+    transform 0.4s ease;
+}
+
+.movie-card:hover .movie-poster {
+  transform: scale(1.055);
+}
+
+
+/* =========================================
+   RATING
+========================================= */
+
+.rating {
+  position: absolute;
+
+  top: 9px;
+  right: 9px;
+
+  z-index: 3;
+
+  padding:
+    5px 8px;
+
+  border-radius: 7px;
+
+  background:
+    rgba(0, 0, 0, 0.76);
+
+  color: #ffd76b;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  backdrop-filter: blur(7px);
+}
+
+
+/* =========================================
+   MOVIE INFO
+========================================= */
+
+.movie-info {
+  padding:
+    11px 10px 13px;
+}
+
+.movie-info h3 {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 13px;
+
+  font-weight: 650;
+
+  line-height: 1.35;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+.movie-info p {
+  margin-top: 4px;
+
+  color: #85818f;
+
+  font-size: 11px;
+}
+
+
+/* =========================================
+   EMPTY STATE
+========================================= */
+
+.empty-movies {
+  padding: 70px 20px;
+
+  text-align: center;
+
+  color: #8c8995;
+}
+
+.empty-icon {
+  font-size: 45px;
+
+  margin-bottom: 12px;
+}
+
+.empty-movies h3 {
+  color: white;
+
+  font-size: 18px;
+
+  margin-bottom: 7px;
+}
+
+.empty-movies p {
+  font-size: 13px;
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 1200px) {
+  .movie-grid {
+    grid-template-columns:
+      repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 950px) {
+  .movie-grid {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+
+    gap: 17px;
+  }
+}
+
+@media (max-width: 700px) {
+  .movie-grid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+    gap: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .movie-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 13px;
+  }
+}

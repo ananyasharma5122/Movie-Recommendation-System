@@ -1,634 +1,514 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from flask_jwt_extended import (
-    JWTManager,
-    create_access_token,
-    jwt_required,
-    get_jwt_identity
-)
-from werkzeug.security import generate_password_hash, check_password_hash
 
-from pymongo import MongoClient
-from dotenv import load_dotenv
-from bson import ObjectId
-
+from pathlib import Path
 import os
+import requests
+from dotenv import load_dotenv
+
+from recommender import MovieRecommender
 
 
-# =====================================================
-# LOAD ENVIRONMENT VARIABLES
-# =====================================================
-
-load_dotenv()
-
-
-# =====================================================
+# ============================================================
 # FLASK APP
-# =====================================================
+# ============================================================
 
 app = Flask(__name__)
 
+CORS(app)
 
-# =====================================================
-# CORS
-# =====================================================
 
-CORS(
-    app,
-    origins=["http://localhost:5173"],
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"]
+# ============================================================
+# ENVIRONMENT VARIABLES
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parent
+
+ENV_PATH = BASE_DIR / ".env"
+
+load_dotenv(ENV_PATH, override=True)
+
+TMDB_API_KEY = os.getenv("TMDB_API_KEY")
+
+print("=" * 60)
+print("TMDB API key loaded:", bool(TMDB_API_KEY))
+print("=" * 60)
+
+
+# ============================================================
+# DATASET PATH
+# ============================================================
+
+DATA_PATH = (
+    BASE_DIR
+    / "data"
+    / "tmdb_5000_movies.csv"
 )
 
 
-# =====================================================
-# JWT CONFIGURATION
-# =====================================================
+# ============================================================
+# CHECK DATASET
+# ============================================================
 
-app.config["JWT_SECRET_KEY"] = os.getenv(
-    "JWT_SECRET_KEY",
-    "movieverse-secret-key"
-)
+if not DATA_PATH.exists():
 
-jwt = JWTManager(app)
+    raise FileNotFoundError(
+        f"""
+Movie dataset not found!
 
+Expected location:
 
-# =====================================================
-# MONGODB CONNECTION
-# =====================================================
+{DATA_PATH}
 
-MONGO_URI = os.getenv(
-    "MONGO_URI",
-    "mongodb://localhost:27017/"
-)
+Please place tmdb_5000_movies.csv inside:
 
-try:
-
-    client = MongoClient(
-        MONGO_URI,
-        serverSelectionTimeoutMS=5000
+backend/data/
+"""
     )
 
-    # Test MongoDB connection
-    client.admin.command("ping")
 
-    print("MongoDB Connected Successfully!")
+# ============================================================
+# LOAD RECOMMENDER
+# ============================================================
 
-    # Database
-    db = client["MovieVerse"]
+print("=" * 60)
+print("Starting MovieVerse backend...")
+print("=" * 60)
 
-    # Users collection
-    users_collection = db["users"]
-
-except Exception as e:
-
-    print("MongoDB Connection Failed!")
-    print(e)
-
-    client = None
-    db = None
-    users_collection = None
+recommender = MovieRecommender(DATA_PATH)
 
 
-# =====================================================
-# HOME ROUTE
-# =====================================================
+# ============================================================
+# TMDB MOVIE DETAILS
+# ============================================================
 
-@app.route("/", methods=["GET"])
-def home():
-
-    return jsonify({
-        "message": "MovieVerse Backend + MongoDB is running 🎬"
-    })
-
-
-# =====================================================
-# MONGODB TEST ROUTE
-# =====================================================
-
-@app.route("/api/test-db", methods=["GET"])
-def test_db():
+def get_tmdb_movie(movie_id):
 
     try:
 
-        if client is None:
+        # ----------------------------------------------------
+        # Check API key
+        # ----------------------------------------------------
 
-            return jsonify({
-                "message": "MongoDB is not connected"
-            }), 500
+        if not TMDB_API_KEY:
 
-        client.admin.command("ping")
+            print("TMDB API key is missing.")
 
-        return jsonify({
-            "message": "MongoDB connected successfully 🎉"
-        }), 200
-
-    except Exception as e:
-
-        return jsonify({
-            "message": "MongoDB connection failed",
-            "error": str(e)
-        }), 500
+            return {}
 
 
-# =====================================================
-# SIGNUP
-# =====================================================
+        # ----------------------------------------------------
+        # TMDB URL
+        # ----------------------------------------------------
 
-@app.route("/api/auth/signup", methods=["POST"])
-def signup():
-
-    try:
-
-        data = request.get_json()
-
-        if not data:
-
-            return jsonify({
-                "message": "No data received"
-            }), 400
-
-        name = data.get("name")
-        email = data.get("email")
-        password = data.get("password")
-
-        if not name or not email or not password:
-
-            return jsonify({
-                "message": "All fields are required"
-            }), 400
-
-        email = email.lower().strip()
-
-        if users_collection is None:
-
-            return jsonify({
-                "message": "Database is not connected"
-            }), 500
-
-        # Check existing user
-        existing_user = users_collection.find_one({
-            "email": email
-        })
-
-        if existing_user:
-
-            return jsonify({
-                "message": "Email already registered"
-            }), 409
-
-        # Hash password
-        hashed_password = generate_password_hash(
-            password
+        url = (
+            f"https://api.themoviedb.org/3/movie/"
+            f"{movie_id}"
         )
 
-        # Create user
-        user = {
 
-            "name": name.strip(),
+        # ----------------------------------------------------
+        # API KEY AUTHENTICATION
+        # ----------------------------------------------------
 
-            "email": email,
+        params = {
 
-            "password": hashed_password,
-
-            "favorites": [],
-
-            "watchlist": [],
-
-            "ratings": []
+            "api_key":
+                TMDB_API_KEY
 
         }
 
-        result = users_collection.insert_one(user)
 
-        return jsonify({
+        # ----------------------------------------------------
+        # REQUEST
+        # ----------------------------------------------------
 
-            "message": "Account created successfully 🎉",
+        response = requests.get(
 
-            "user_id": str(result.inserted_id)
+            url,
 
-        }), 201
+            params=params,
 
-    except Exception as e:
+            timeout=10
 
-        print("Signup Error:", e)
-
-        return jsonify({
-
-            "message": "Signup failed",
-
-            "error": str(e)
-
-        }), 500
-
-
-# =====================================================
-# LOGIN
-# =====================================================
-
-@app.route("/api/auth/login", methods=["POST"])
-def login():
-
-    try:
-
-        data = request.get_json()
-
-        if not data:
-
-            return jsonify({
-                "message": "No data received"
-            }), 400
-
-        email = data.get("email")
-        password = data.get("password")
-
-        if not email or not password:
-
-            return jsonify({
-                "message": "Email and password are required"
-            }), 400
-
-        email = email.lower().strip()
-
-        if users_collection is None:
-
-            return jsonify({
-                "message": "Database is not connected"
-            }), 500
-
-        # Find user
-        user = users_collection.find_one({
-            "email": email
-        })
-
-        if not user:
-
-            return jsonify({
-                "message": "Invalid email or password"
-            }), 401
-
-        # Check password
-        if not check_password_hash(
-            user["password"],
-            password
-        ):
-
-            return jsonify({
-                "message": "Invalid email or password"
-            }), 401
-
-        # Create JWT
-        token = create_access_token(
-            identity=str(user["_id"])
         )
 
-        return jsonify({
 
-            "message": "Login successful 🎉",
+        # ----------------------------------------------------
+        # DEBUG
+        # ----------------------------------------------------
 
-            "token": token,
-
-            "user": {
-
-                "id": str(user["_id"]),
-
-                "name": user["name"],
-
-                "email": user["email"]
-
-            }
-
-        }), 200
-
-    except Exception as e:
-
-        print("Login Error:", e)
-
-        return jsonify({
-
-            "message": "Login failed",
-
-            "error": str(e)
-
-        }), 500
+        print(
+            f"TMDB movie {movie_id}: "
+            f"{response.status_code}"
+        )
 
 
-# =====================================================
-# PROFILE
-# =====================================================
+        # ----------------------------------------------------
+        # ERROR
+        # ----------------------------------------------------
 
-@app.route("/api/auth/profile", methods=["GET"])
-@jwt_required()
-def profile():
+        if response.status_code != 200:
 
-    try:
-
-        user_id = get_jwt_identity()
-
-        if users_collection is None:
-
-            return jsonify({
-                "message": "Database is not connected"
-            }), 500
-
-        user = users_collection.find_one({
-            "_id": ObjectId(user_id)
-        })
-
-        if not user:
-
-            return jsonify({
-                "message": "User not found"
-            }), 404
-
-        return jsonify({
-
-            "id": str(user["_id"]),
-
-            "name": user["name"],
-
-            "email": user["email"],
-
-            "favorites": user.get(
-                "favorites",
-                []
-            ),
-
-            "watchlist": user.get(
-                "watchlist",
-                []
-            ),
-
-            "ratings": user.get(
-                "ratings",
-                []
+            print(
+                "TMDB error:",
+                response.text
             )
 
-        }), 200
+            return {}
+
+
+        # ----------------------------------------------------
+        # JSON DATA
+        # ----------------------------------------------------
+
+        data = response.json()
+
+
+        # ----------------------------------------------------
+        # RETURN REQUIRED DATA
+        # ----------------------------------------------------
+
+        return {
+
+            "poster_path":
+                data.get(
+                    "poster_path"
+                ),
+
+            "backdrop_path":
+                data.get(
+                    "backdrop_path"
+                ),
+
+            "release_date":
+                data.get(
+                    "release_date"
+                ),
+
+            "overview":
+                data.get(
+                    "overview"
+                ),
+
+            "vote_average":
+                data.get(
+                    "vote_average"
+                )
+
+        }
+
+
+    except requests.exceptions.RequestException as e:
+
+        print(
+            f"TMDB request failed "
+            f"for movie {movie_id}:",
+            e
+        )
+
+        return {}
+
 
     except Exception as e:
 
-        print("Profile Error:", e)
+        print(
+            f"Unexpected TMDB error "
+            f"for movie {movie_id}:",
+            e
+        )
 
-        return jsonify({
-
-            "message": "Could not fetch profile",
-
-            "error": str(e)
-
-        }), 500
+        return {}
 
 
-# =====================================================
-# LOGOUT
-# =====================================================
+# ============================================================
+# HOME
+# ============================================================
 
-@app.route("/api/auth/logout", methods=["POST"])
-def logout():
+@app.route("/")
+def home():
 
     return jsonify({
 
-        "message": "Logout successful"
+        "message":
+            "MovieVerse Flask backend is running!",
 
-    }), 200
+        "status":
+            "success"
+
+    })
 
 
-# =====================================================
-# ADD TO FAVORITES
-# =====================================================
+# ============================================================
+# TEST
+# ============================================================
 
-@app.route("/api/movies/favorite", methods=["POST"])
-@jwt_required()
-def add_favorite():
+@app.route("/api/test")
+def test():
+
+    return jsonify({
+
+        "status":
+            "success",
+
+        "message":
+            "React can connect to Flask."
+
+    })
+
+
+# ============================================================
+# GET MOVIES
+# ============================================================
+
+@app.route(
+    "/api/movies",
+    methods=["GET"]
+)
+def get_movies():
 
     try:
 
-        user_id = get_jwt_identity()
+        # ----------------------------------------------------
+        # Get movies from ML dataset
+        # ----------------------------------------------------
 
-        data = request.get_json()
+        movies = recommender.get_movies(
+            number=6
+        )
 
-        if not data:
 
-            return jsonify({
-                "message": "No movie data received"
-            }), 400
+        # ----------------------------------------------------
+        # Add TMDB information
+        # ----------------------------------------------------
 
-        movie = data.get("movie")
+        for movie in movies:
 
-        if not movie:
+            tmdb_data = get_tmdb_movie(
+                movie["id"]
+            )
 
-            return jsonify({
-                "message": "Movie data is required"
-            }), 400
+            movie.update(
+                tmdb_data
+            )
 
-        if users_collection is None:
 
-            return jsonify({
-                "message": "Database is not connected"
-            }), 500
+        # ----------------------------------------------------
+        # RESPONSE
+        # ----------------------------------------------------
 
-        users_collection.update_one(
+        return jsonify({
 
-            {
-                "_id": ObjectId(user_id)
-            },
+            "status":
+                "success",
 
-            {
-                "$addToSet": {
-                    "favorites": movie
-                }
-            }
+            "movies":
+                movies
 
+        })
+
+
+    except Exception as e:
+
+        print(
+            "Error loading movies:",
+            e
         )
 
         return jsonify({
 
-            "message": "Movie added to favorites ❤️"
+            "status":
+                "error",
 
-        }), 200
-
-    except Exception as e:
-
-        print("Favorite Error:", e)
-
-        return jsonify({
-
-            "message": "Could not add favorite",
-
-            "error": str(e)
+            "error":
+                str(e)
 
         }), 500
 
 
-# =====================================================
-# ADD TO WATCHLIST
-# =====================================================
+# ============================================================
+# RECOMMEND MOVIES
+# ============================================================
 
-@app.route("/api/movies/watchlist", methods=["POST"])
-@jwt_required()
-def add_watchlist():
+@app.route(
+    "/api/recommend",
+    methods=["POST"]
+)
+def recommend():
+
+    # --------------------------------------------------------
+    # GET JSON DATA
+    # --------------------------------------------------------
+
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+
+    movie_name = data.get(
+        "movie",
+        ""
+    )
+
+
+    number = data.get(
+        "number",
+        6
+    )
+
+
+    # --------------------------------------------------------
+    # CLEAN INPUT
+    # --------------------------------------------------------
+
+    movie_name = str(
+        movie_name
+    ).strip()
+
 
     try:
 
-        user_id = get_jwt_identity()
+        number = int(
+            number
+        )
 
-        data = request.get_json()
+    except (
+        TypeError,
+        ValueError
+    ):
 
-        if not data:
+        number = 6
+
+
+    # --------------------------------------------------------
+    # LIMIT RESULTS
+    # --------------------------------------------------------
+
+    if number <= 0:
+
+        number = 6
+
+
+    if number > 20:
+
+        number = 20
+
+
+    # --------------------------------------------------------
+    # EMPTY SEARCH
+    # --------------------------------------------------------
+
+    if not movie_name:
+
+        return jsonify({
+
+            "status":
+                "error",
+
+            "error":
+                "Please enter a movie name."
+
+        }), 400
+
+
+    # --------------------------------------------------------
+    # RECOMMENDATION
+    # --------------------------------------------------------
+
+    try:
+
+        selected_movie, recommendations = (
+            recommender.recommend(
+
+                movie_name,
+
+                number
+
+            )
+        )
+
+
+        # ----------------------------------------------------
+        # MOVIE NOT FOUND
+        # ----------------------------------------------------
+
+        if selected_movie is None:
 
             return jsonify({
-                "message": "No movie data received"
-            }), 400
 
-        movie = data.get("movie")
+                "status":
+                    "error",
 
-        if not movie:
+                "error":
+                    f"No movie found for "
+                    f"'{movie_name}'."
 
-            return jsonify({
-                "message": "Movie data is required"
-            }), 400
+            }), 404
 
-        if users_collection is None:
 
-            return jsonify({
-                "message": "Database is not connected"
-            }), 500
+        # ----------------------------------------------------
+        # GET TMDB DATA
+        # ----------------------------------------------------
 
-        users_collection.update_one(
+        for movie in recommendations:
 
-            {
-                "_id": ObjectId(user_id)
-            },
+            tmdb_data = get_tmdb_movie(
+                movie["id"]
+            )
 
-            {
-                "$addToSet": {
-                    "watchlist": movie
-                }
-            }
+            movie.update(
+                tmdb_data
+            )
 
+
+        # ----------------------------------------------------
+        # SUCCESS
+        # ----------------------------------------------------
+
+        return jsonify({
+
+            "status":
+                "success",
+
+            "selected_movie":
+                selected_movie,
+
+            "recommendations":
+                recommendations
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "Recommendation error:",
+            e
         )
 
         return jsonify({
 
-            "message": "Movie added to watchlist 🔖"
+            "status":
+                "error",
 
-        }), 200
-
-    except Exception as e:
-
-        print("Watchlist Error:", e)
-
-        return jsonify({
-
-            "message": "Could not add watchlist",
-
-            "error": str(e)
+            "error":
+                str(e)
 
         }), 500
 
 
-# =====================================================
-# REMOVE FROM FAVORITES
-# =====================================================
-
-@app.route("/api/movies/favorite/<movie_id>", methods=["DELETE"])
-@jwt_required()
-def remove_favorite(movie_id):
-
-    try:
-
-        user_id = get_jwt_identity()
-
-        result = users_collection.update_one(
-
-            {
-                "_id": ObjectId(user_id)
-            },
-
-            {
-                "$pull": {
-                    "favorites": {
-                        "id": int(movie_id)
-                    }
-                }
-            }
-
-        )
-
-        return jsonify({
-
-            "message": "Movie removed from favorites"
-
-        }), 200
-
-    except Exception as e:
-
-        print("Remove Favorite Error:", e)
-
-        return jsonify({
-
-            "message": "Could not remove favorite",
-
-            "error": str(e)
-
-        }), 500
-
-
-# =====================================================
-# REMOVE FROM WATCHLIST
-# =====================================================
-
-@app.route("/api/movies/watchlist/<movie_id>", methods=["DELETE"])
-@jwt_required()
-def remove_watchlist(movie_id):
-
-    try:
-
-        user_id = get_jwt_identity()
-
-        users_collection.update_one(
-
-            {
-                "_id": ObjectId(user_id)
-            },
-
-            {
-                "$pull": {
-                    "watchlist": {
-                        "id": int(movie_id)
-                    }
-                }
-            }
-
-        )
-
-        return jsonify({
-
-            "message": "Movie removed from watchlist"
-
-        }), 200
-
-    except Exception as e:
-
-        print("Remove Watchlist Error:", e)
-
-        return jsonify({
-
-            "message": "Could not remove watchlist",
-
-            "error": str(e)
-
-        }), 500
-
-
-# =====================================================
-# START SERVER
-# =====================================================
+# ============================================================
+# RUN SERVER
+# ============================================================
 
 if __name__ == "__main__":
 
     app.run(
-        debug=True,
+
         host="127.0.0.1",
-        port=5000
+
+        port=5000,
+
+        debug=True
+
     )
